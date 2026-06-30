@@ -1,0 +1,14 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "sakti-portal",
+  "compatibility_date": "2026-06-30",
+  "observability": {
+    "enabled": true
+  },
+  "assets": {
+    "directory": "portal_sakti.html"
+  },
+  "compatibility_flags": [
+    "nodejs_compat"
+  ]
+}
