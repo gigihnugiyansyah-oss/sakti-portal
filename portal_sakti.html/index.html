@@ -170,7 +170,7 @@
             background: #f8f9fa; 
         }
 
-        /* Gaya Khusus Tombol Survei (Menu 5) */
+        /* Gaya Khusus Tombol Survei (Menu 5 Direct Tautan) */
         .menu-btn-survei { 
             background: #ffffff; 
             color: #002040; 
@@ -199,7 +199,7 @@
             margin-right: 15px; 
         }
         
-        #doc-viewer, #qrcode-viewer {
+        #doc-viewer {
             display: none;
             flex-direction: column;
             width: 100%;
@@ -239,41 +239,6 @@
             width: 100%;
             height: 100%;
             border: none;
-        }
-
-        /* Desain Box khusus Tampilan QR Code */
-        .qrcode-wrapper {
-            width: 100%;
-            background: #fff;
-            border-radius: 15px;
-            border: 2px solid rgba(212, 175, 55, 0.5);
-            padding: 30px 20px;
-            text-align: center;
-            color: #333;
-        }
-
-        .qrcode-wrapper h3 {
-            font-size: 18px;
-            margin-bottom: 8px;
-            color: #002040;
-            font-weight: 700;
-        }
-
-        .qrcode-wrapper p {
-            font-size: 13px;
-            color: #666;
-            margin-bottom: 20px;
-        }
-
-        .qrcode-img {
-            max-width: 250px;
-            width: 100%;
-            height: auto;
-            margin: 0 auto;
-            display: block;
-            border: 1px solid #eee;
-            padding: 10px;
-            border-radius: 10px;
         }
 
         .footer { 
@@ -323,6 +288,7 @@
             <span class="icon">👤</span> 4. Alur Kunjungan
         </a>
 
+        <!-- Menu 5 dikembalikan ke gaya pengalihan langsung -->
         <a id="btn-survei" class="menu-btn-survei">
             <span class="icon">📊</span> 5. Survei Kepuasan Pelayanan
         </a>
@@ -337,113 +303,126 @@
         </div>
         <div class="footer">🔒 Lapas Kelas IIB Tegal • 2026</div>
     </div>
-
-    <div id="qrcode-viewer">
-        <button class="back-btn" onclick="kembaliKeMenu()">⬅️ Kembali ke Menu Utama</button>
-        <div class="qrcode-wrapper">
-            <h3>Survei Kepuasan Masyarakat (IKM)</h3>
-            <p>Silakan pindai / scan QR Code di bawah ini menggunakan kamera HP Anda untuk mengisi kuesioner pelayanan kami.</p>
-            <img class="qrcode-img" src="qrcode_survei.png" alt="QR Code Survei Kepuasan">
-        </div>
-        <div class="footer">🔒 Lapas Kelas IIB Tegal • 2026</div>
-    </div>
 </div>
 
 <script>
-    // 1. PENGALIHAN OTOMATIS UNTUK USER ANDROID DI IN-APP BROWSER INSTAGRAM
+    // 1. BYPASS OTOMATIS IN-APP BROWSER INSTAGRAM ANDROID
     (function() {
         var ua = navigator.userAgent || navigator.vendor || window.opera;
         var isInstagram = (ua.indexOf('Instagram') > -1) || (ua.indexOf('FBAN') > -1) || (ua.indexOf('FBAV') > -1);
         if (isInstagram && /Android/i.test(navigator.userAgent)) {
-            // Paksa membuka Google Chrome bawaan sistem Android agar terhindar dari pemblokiran sandbox Instagram
             window.location.href = 'intent://' + window.location.hostname + window.location.pathname + '#Intent;scheme=https;package=com.android.chrome;end';
         }
     })();
 
     const mainMenu = document.getElementById('main-menu');
     const docViewer = document.getElementById('doc-viewer');
-    const qrcodeViewer = document.getElementById('qrcode-viewer');
     const pdfFrame = document.getElementById('pdf-frame');
     const mainContainer = document.getElementById('main-container');
     const menuButtons = document.querySelectorAll('.menu-btn');
     const btnSurvei = document.getElementById('btn-survei');
 
-    const API_URL = 'https://script.google.com/macros/s/AKfycbw3Vus8TQnmQqN7vdf6KOdofYjkbg2ukjdTBoqAK1DuW2xLFwe5QfBqWomdF3pcfw/exec';
+    const BASE_API_URL = 'https://script.google.com/macros/s/AKfycbw3Vus8TQnmQqN7vdf6KOdofYjkbg2ukjdTBoqAK1DuW2xLFwe5QfBqWomdF3pcfw/exec';
 
-    // 2. HANDLER UNTUK MENU PDF (MENU 2, 3, DAN 4) MENGGUNAKAN DYNAMIC FETCH + CORS MODE
+    // Membuat pemanggilan URL dinamis agar terhindar dari Cache Cloudflare
+    function getFreshDataUrl() {
+        return BASE_API_URL + '?_ts=' + new Date().getTime();
+    }
+
+    // 2. LOGIKA UTAMA: FETCH DATA DARI GOOGLE SPREADSHEET (TAB CONFIG)
+    function ambilTautanMenu(menuId, buttonElement) {
+        const originalText = buttonElement.innerHTML;
+        buttonElement.innerHTML = `<span class="icon">⏳</span> Memuat data terupdate...`;
+        buttonElement.style.pointerEvents = 'none';
+
+        fetch(getFreshDataUrl(), {
+            method: 'GET',
+            mode: 'cors',
+            headers: { 'Accept': 'application/json' }
+        })
+        .then(response => {
+            if (!response.ok) throw new Error('Jaringan bermasalah');
+            return response.json();
+        })
+        .then(result => {
+            buttonElement.innerHTML = originalText;
+            buttonElement.style.pointerEvents = 'auto';
+
+            let targetUrl = "";
+            if (result.status === "success") {
+                if (menuId === "2") targetUrl = result.url_menu2;
+                else if (menuId === "3") targetUrl = result.url_menu3;
+                else if (menuId === "4") targetUrl = result.url_menu4;
+            }
+
+            if (targetUrl && targetUrl.trim() !== "") {
+                // Konversi Otomatis link Drive agar kompatibel penuh di Iframe Mobile
+                if (targetUrl.includes('/view?usp=sharing')) {
+                    targetUrl = targetUrl.replace('/view?usp=sharing', '/preview');
+                } else if (targetUrl.includes('/view')) {
+                    targetUrl = targetUrl.replace('/view', '/preview');
+                }
+
+                pdfFrame.src = targetUrl;
+                mainMenu.style.display = 'none';
+                docViewer.style.display = 'flex';
+                mainContainer.classList.add('view-mode'); 
+            } else {
+                alert("⚠️ Tautan belum diisi atau diperbarui oleh Admin di spreadsheet.");
+            }
+        })
+        .catch(error => {
+            buttonElement.innerHTML = originalText;
+            buttonElement.style.pointerEvents = 'auto';
+            console.error("Fetch error:", error);
+            alert("Gagal memuat dokumen otomatis. Silakan muat ulang halaman atau buka melalui Google Chrome.");
+        });
+    }
+
+    // Pasangkan event listener ke Menu 2, 3, dan 4
     menuButtons.forEach((button) => {
         button.addEventListener('click', function(e) {
-            e.preventDefault(); 
+            e.preventDefault();
             const menuId = this.getAttribute('data-id');
-            
-            // Tampilkan indikator loading sederhana pada tombol saat proses memuat
-            const originalText = this.innerHTML;
-            this.innerHTML = `<span class="icon">⏳</span> Memuat data terupdate...`;
-            this.style.pointerEvents = 'none';
-
-            fetch(API_URL, {
-                method: 'GET',
-                mode: 'cors', // Menembus proteksi Cross-Origin In-App Browser
-                headers: {
-                    'Accept': 'application/json'
-                }
-            })
-            .then(response => {
-                if (!response.ok) throw new Error('Respon jaringan bermasalah');
-                return response.json();
-            })
-            .then(result => {
-                // Kembalikan teks asli tombol
-                this.innerHTML = originalText;
-                this.style.pointerEvents = 'auto';
-
-                let targetUrl = "";
-                
-                // Mendukung pemetaan dinamis berdasarkan data-id menu
-                if (result.status === "success" || result.status === "ada") {
-                    if (menuId === "2") targetUrl = result.url_menu2 || result.url || result.data;
-                    else if (menuId === "3") targetUrl = result.url_menu3 || result.url || result.data;
-                    else if (menuId === "4") targetUrl = result.url_menu4 || result.url || result.data;
-                }
-
-                // Jika data link ditemukan, render ke iframe
-                if (targetUrl && targetUrl.trim() !== "") {
-                    if (targetUrl.includes('/view?usp=sharing')) {
-                        targetUrl = targetUrl.replace('/view?usp=sharing', '/preview');
-                    } else if (targetUrl.includes('/view')) {
-                        targetUrl = targetUrl.replace('/view', '/preview');
-                    }
-
-                    pdfFrame.src = targetUrl;
-                    mainMenu.style.display = 'none';
-                    docViewer.style.display = 'flex';
-                    mainContainer.classList.add('view-mode'); 
-                } else {
-                    alert("Tautan PDF belum diisi oleh Admin atau belum diperbarui di spreadsheet.");
-                }
-            })
-            .catch(error => {
-                this.innerHTML = originalText;
-                this.style.pointerEvents = 'auto';
-                console.error("Fetch error:", error);
-                alert("Gagal memuat dokumen otomatis di browser Instagram. Silakan klik ikon titik tiga (...) di kanan atas layar Anda, lalu pilih opsi 'Buka di Browser' atau 'Buka di Chrome'.");
-            });
+            ambilTautanMenu(menuId, this);
         });
     });
 
-    // 3. HANDLER UNTUK MENU 5 (TAMPILKAN QR CODE)
+    // 3. HANDLER KEMBALINYA MENU 5 LANGSUNG KE TAUTAN RESMI (TANPA BARCODE)
     btnSurvei.addEventListener('click', function(e) {
         e.preventDefault();
-        mainMenu.style.display = 'none';
-        qrcodeViewer.style.display = 'flex';
-        mainContainer.classList.add('view-mode');
+        const originalText = this.innerHTML;
+        this.innerHTML = `<span class="icon">⏳</span> Mengalihkan ke halaman survei...`;
+        this.style.pointerEvents = 'none';
+
+        fetch(getFreshDataUrl(), {
+            method: 'GET',
+            mode: 'cors'
+        })
+        .then(response => response.json())
+        .then(result => {
+            this.innerHTML = originalText;
+            this.style.pointerEvents = 'auto';
+
+            if (result.status === "success" && result.url_menu5 && result.url_menu5.trim() !== "") {
+                // Langsung lempar pengunjung keluar menuju link survei resmi
+                window.location.href = result.url_menu5.trim();
+            } else {
+                alert("⚠️ Tautan Survei belum diisi atau belum diperbarui oleh Admin.");
+            }
+        })
+        .catch(error => {
+            this.innerHTML = originalText;
+            this.style.pointerEvents = 'auto';
+            console.error("Gagal memuat link survei:", error);
+            alert("Gagal mengalihkan. Pastikan koneksi internet stabil.");
+        });
     });
 
     // 4. FUNGSI KEMBALI KE MENU UTAMA
     function kembaliKeMenu() {
         pdfFrame.src = ""; 
         docViewer.style.display = 'none';
-        qrcodeViewer.style.display = 'none';
         mainMenu.style.display = 'block';
         mainContainer.classList.remove('view-mode'); 
     }
