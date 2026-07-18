@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="id">
 <head>
     <script>
@@ -36,24 +36,25 @@
     <title>ADMIN PANEL - PORTAL DIGITAL SAKTI</title>
     <style>
         * {
-/* Gaya Ikon Gembok Penjagaan Utama */
-.security-badge {
-    font-size: 42px; /* Ukuran besar agar mencolok */
-    margin-bottom: 10px;
-    display: inline-block;
-    filter: drop-shadow(0 4px 8px rgba(212, 175, 55, 0.3)); /* Efek kilau emas */
-    animation: pulse 3s infinite alternate;
-}
-
-@keyframes pulse {
-    0% { transform: scale(1); opacity: 0.9; }
-    100% { transform: scale(1.05); opacity: 1; }
-} 
             box-sizing: border-box; 
             margin: 0; 
             padding: 0; 
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
         }
+
+        /* Gaya Ikon Gembok Penjagaan Utama */
+        .security-badge {
+            font-size: 42px; /* Ukuran besar agar mencolok */
+            margin-bottom: 10px;
+            display: inline-block;
+            filter: drop-shadow(0 4px 8px rgba(212, 175, 55, 0.3)); /* Efek kilau emas */
+            animation: pulse 3s infinite alternate;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.9; }
+            100% { transform: scale(1.05); opacity: 1; }
+        } 
         
         body { 
             background: linear-gradient(135deg, #0a192f, #112240); 
@@ -170,15 +171,9 @@
 
 <div class="admin-container">
     <div class="admin-header">
-<div class="header">
-    <!-- 🔒 LOGO GEMBOK UTAMA PENJAGAAN -->
-    <div class="security-badge">🔒</div>
-    
-    <div class="portal-title">PORTAL SAKTI</div>
-    <div class="akronim-sakti">(Sistem Informasi Kunjungan Terintegrasi)</div>
-    
-    <div class="satker-nama">Lapas Kelas IIB Tegal</div>
-</div>
+        <div class="security-badge">🔒</div>
+        <div style="font-size: 24px; font-weight: 800; color: #fff; letter-spacing: 1px;">PORTAL SAKTI</div>
+        <div style="font-size: 12px; color: #a8ff78; font-style: italic; margin-bottom: 10px;">(Sistem Informasi Kunjungan Terintegrasi)</div>
         <h2>PANEL ADMIN SAKTI</h2>
         <p>Lapas Kelas IIB Tegal — Manajemen Tautan Dokumen Kunjungan</p>
     </div>
@@ -187,25 +182,25 @@
         <!-- Input untuk Menu 2 -->
         <div class="input-group">
             <label for="url-menu-2">🛡️ 1. Tautan Menu 2 (Jadwal, Syarat & Ketentuan Layanan)</label>
-            <input type="text" id="url-menu-2" placeholder="Tempel tautan Google Drive PDF di sini...">
-            <span class="hint">*Menghubungkan ke kunci penyimpanan: sakti_url_2</span>
+            <input type="text" id="url-menu-2" placeholder="Memuat data dari Google Sheets...">
+            <span class="hint">*Sinkronisasi otomatis dengan Google Spreadsheet</span>
         </div>
         
         <!-- Input untuk Menu 3 -->
         <div class="input-group">
             <label for="url-menu-3">📦 2. Tautan Menu 3 (Daftar Barang Dilarang)</label>
-            <input type="text" id="url-menu-3" placeholder="Tempel tautan Google Drive PDF di sini...">
-            <span class="hint">*Menghubungkan ke kunci penyimpanan: sakti_url_3</span>
+            <input type="text" id="url-menu-3" placeholder="Memuat data dari Google Sheets...">
+            <span class="hint">*Sinkronisasi otomatis dengan Google Spreadsheet</span>
         </div>
         
         <!-- Input untuk Menu 4 -->
         <div class="input-group">
             <label for="url-menu-4">👤 3. Tautan Menu 4 (Alur Kunjungan)</label>
-            <input type="text" id="url-menu-4" placeholder="Tempel tautan Google Drive PDF di sini...">
-            <span class="hint">*Menghubungkan ke kunci penyimpanan: sakti_url_4</span>
+            <input type="text" id="url-menu-4" placeholder="Memuat data dari Google Sheets...">
+            <span class="hint">*Sinkronisasi otomatis dengan Google Spreadsheet</span>
         </div>
         
-        <button type="submit" class="btn-simpan">💾 Simpan Semua Perubahan Tautan</button>
+        <button type="submit" id="btn-submit-text" class="btn-simpan">💾 Simpan Semua Perubahan Tautan</button>
     </form>
 
     <div class="info-box">
@@ -217,42 +212,75 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Pemetaan ID elemen dan kunci localStorage
-        const fields = {
-            'url-menu-2': 'sakti_url_2',
-            'url-menu-3': 'sakti_url_3',
-            'url-menu-4': 'sakti_url_4'
-        };
+        const API_URL = 'https://script.google.com/macros/s/AKfycbw3Vus8TQnmQqN7vdf6KOdofYjkbg2ukjdTBoqAK1DuW2xLFwe5QfBqWomdF3pcfw/exec';
+        const btnSubmit = document.getElementById('btn-submit-text');
 
-        // 1. Memuat data tautan yang tersimpan saat ini ketika halaman admin dibuka
-        for (const [elementId, storageKey] of Object.entries(fields)) {
-            const savedUrl = localStorage.getItem(storageKey);
-            if (savedUrl) {
-                document.getElementById(elementId).value = savedUrl;
+        // 1. MEMUAT DATA SECARA REAL-TIME DARI SPREADSHEET SAAT PANEL ADMIN DIBUKA
+        fetch(API_URL, {
+            method: 'GET',
+            mode: 'cors'
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.status === "success" || result.status === "ada") {
+                // Pasang link ter-update ke masing-masing box input (Mendukung properti custom/fallback)
+                document.getElementById('url-menu-2').value = result.url_menu2 || result.data || "";
+                document.getElementById('url-menu-3').value = result.url_menu3 || "";
+                document.getElementById('url-menu-4').value = result.url_menu4 || "";
             }
-        }
+        })
+        .catch(error => {
+            console.error("Gagal mengambil data dari Google Sheets:", error);
+        });
 
-        // 2. Proses penyimpanan data saat tombol Simpan ditekan
+        // 2. PROSES PENGIRIMAN DATA BARU (UPDATE) KE GOOGLE APPS SCRIPT
         document.getElementById('admin-form').addEventListener('submit', function(e) {
             e.preventDefault();
             
-            let berhasilDisimpan = true;
+            const url2 = document.getElementById('url-menu-2').value.trim();
+            const url3 = document.getElementById('url-menu-3').value.trim();
+            const url4 = document.getElementById('url-menu-4').value.trim();
 
-            for (const [elementId, storageKey] of Object.entries(fields)) {
-                const inputValue = document.getElementById(elementId).value.trim();
+            // Ubah teks tombol menjadi loading indicator
+            btnSubmit.innerHTML = "⏳ Sedang Menyimpan ke Google Sheets...";
+            btnSubmit.style.pointerEvents = "none";
+            btnSubmit.style.opacity = "0.7";
+
+            // Mengirim data menggunakan metode POST dengan URL parameter / JSON payload terstruktur
+            fetch(API_URL, {
+                method: 'POST',
+                mode: 'cors',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: new URLSearchParams({
+                    'action': 'updateLinks',
+                    'url_menu2': url2,
+                    'url_menu3': url3,
+                    'url_menu4': url4
+                })
+            })
+            .then(response => response.json())
+            .then(result => {
+                // Kembalikan status tombol
+                btnSubmit.innerHTML = "💾 Simpan Semua Perubahan Tautan";
+                btnSubmit.style.pointerEvents = "auto";
+                btnSubmit.style.opacity = "1";
+
+                alert("✅ Sukses! Semua data tautan berhasil diperbarui dan disinkronkan ke Google Sheets!");
+            })
+            .catch(error => {
+                btnSubmit.innerHTML = "💾 Simpan Semua Perubahan Tautan";
+                btnSubmit.style.pointerEvents = "auto";
+                btnSubmit.style.opacity = "1";
+                console.error("Gagal mengirim perubahan data:", error);
                 
-                // Simpan ke localStorage jika tidak kosong
-                if (inputValue !== "") {
-                    localStorage.setItem(storageKey, inputValue);
-                } else {
-                    // Jika dikosongkan, hapus record lama agar fallback ke kode HTML utama berjalan
-                    localStorage.removeItem(storageKey);
-                }
-            }
-
-            if (berhasilDisimpan) {
-                alert("✅ Semua perubahan tautan berhasil disimpan ke sistem local!");
-            }
+                // Fallback simpan lokal jika koneksi sedang terganggu
+                localStorage.setItem('sakti_url_2', url2);
+                localStorage.setItem('sakti_url_3', url3);
+                localStorage.setItem('sakti_url_4', url4);
+                alert("⚠️ Sistem Apps Script gagal merespon. Perubahan sementara disimpan di browser lokal.");
+            });
         });
     });
 </script>
