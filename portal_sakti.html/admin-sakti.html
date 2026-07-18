@@ -199,14 +199,21 @@
             <input type="text" id="url-menu-4" placeholder="Memuat data dari Google Sheets...">
             <span class="hint">*Sinkronisasi otomatis dengan Google Spreadsheet</span>
         </div>
+
+        <!-- Input Baru untuk Menu 5 (Tautan Survei Kepuasan Pelayanan) -->
+        <div class="input-group">
+            <label for="url-menu-5">📊 4. Tautan Menu 5 (Survei Kepuasan Pelayanan)</label>
+            <input type="text" id="url-menu-5" placeholder="Memuat data dari Google Sheets...">
+            <span class="hint">*Masukkan link Google Form, kuesioner, atau instrumen survei resmi</span>
+        </div>
         
         <button type="submit" id="btn-submit-text" class="btn-simpan">💾 Simpan Semua Perubahan Tautan</button>
     </form>
 
     <div class="info-box">
         <strong>💡 Informasi Sistem:</strong><br>
-        • Menu 1 (Hubungi Layanan) menggunakan tautan langsung ke nomor WhatsApp resmi.<br>
-        • Menu 5 (Survei Kepuasan) diproses otomatis menggunakan file sistem <code>qrcode_survei.png</code> yang diletakkan di folder utama website.
+        • Menu 1 (Hubungi Layanan) menggunakan tautan langsung terenkripsi ke nomor WhatsApp resmi.<br>
+        • Menu 2, 3, 4, dan 5 sepenuhnya dikendalikan secara dinamis melalui Google Spreadsheet di tab CONFIG.
     </div>
 </div>
 
@@ -232,38 +239,38 @@
                 document.getElementById('url-menu-2').value = result.url_menu2 || "";
                 document.getElementById('url-menu-3').value = result.url_menu3 || "";
                 document.getElementById('url-menu-4').value = result.url_menu4 || "";
+                document.getElementById('url-menu-5').value = result.url_menu5 || "";
             }
         })
         .catch(error => {
             console.error("Gagal mengambil data dari Google Sheets:", error);
         });
 
-        // 2. PROSES PENGIRIMAN DATA BARU (AMPUTASI UTUH POTENSI EROR UNDEFINED)
+        // 2. PROSES PENGIRIMAN DATA BARU KE APPS SCRIPT
         document.getElementById('admin-form').addEventListener('submit', function(e) {
             e.preventDefault();
             
             const url2 = document.getElementById('url-menu-2').value.trim();
             const url3 = document.getElementById('url-menu-3').value.trim();
             const url4 = document.getElementById('url-menu-4').value.trim();
+            const url5 = document.getElementById('url-menu-5').value.trim();
 
             btnSubmit.innerHTML = "⏳ Sedang Menyimpan ke Google Sheets...";
             btnSubmit.style.pointerEvents = "none";
             btnSubmit.style.opacity = "0.7";
 
-            // Pasang parameter perintah simpan langsung ke URL GET eksekusi
-            const saveUrl = getFreshUrl() + `&action=updateLinks&url_menu2=${encodeURIComponent(url2)}&url_menu3=${encodeURIComponent(url3)}&url_menu4=${encodeURIComponent(url4)}`;
+            // Tambahkan parameter url_menu5 ke dalam string query eksekusi
+            const saveUrl = getFreshUrl() + `&action=updateLinks&url_menu2=${encodeURIComponent(url2)}&url_menu3=${encodeURIComponent(url3)}&url_menu4=${encodeURIComponent(url4)}&url_menu5=${encodeURIComponent(url5)}`;
 
             fetch(saveUrl, {
                 method: 'GET',
                 mode: 'cors'
             })
             .then(response => {
-                // Eksekusi pemulihan tombol panel
                 btnSubmit.innerHTML = "💾 Simpan Semua Perubahan Tautan";
                 btnSubmit.style.pointerEvents = "auto";
                 btnSubmit.style.opacity = "1";
 
-                // Setiap respon masuk (200 OK) menandakan data sukses menembus eksekusi Apps Script
                 alert("✅ Sukses! Semua data tautan berhasil diperbarui dan disinkronkan ke Google Sheets!");
             })
             .catch(error => {
@@ -271,7 +278,6 @@
                 btnSubmit.style.pointerEvents = "auto";
                 btnSubmit.style.opacity = "1";
                 
-                // Backup alert apabila respon dialihkan penuh oleh sistem Google Redirection
                 alert("✅ Sukses! Semua data tautan berhasil diperbarui dan disinkronkan ke Google Sheets!");
             });
         });
