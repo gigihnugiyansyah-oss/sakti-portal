@@ -288,7 +288,6 @@
             <span class="icon">👤</span> 4. Alur Kunjungan
         </a>
 
-        <!-- Menu 5 dikembalikan ke gaya pengalihan langsung -->
         <a id="btn-survei" class="menu-btn-survei">
             <span class="icon">📊</span> 5. Survei Kepuasan Pelayanan
         </a>
@@ -324,7 +323,6 @@
 
     const BASE_API_URL = 'https://script.google.com/macros/s/AKfycbw3Vus8TQnmQqN7vdf6KOdofYjkbg2ukjdTBoqAK1DuW2xLFwe5QfBqWomdF3pcfw/exec';
 
-    // Membuat pemanggilan URL dinamis agar terhindar dari Cache Cloudflare
     function getFreshDataUrl() {
         return BASE_API_URL + '?_ts=' + new Date().getTime();
     }
@@ -349,14 +347,13 @@
             buttonElement.style.pointerEvents = 'auto';
 
             let targetUrl = "";
-            if (result.status === "success") {
-                if (menuId === "2") targetUrl = result.url_menu2;
-                else if (menuId === "3") targetUrl = result.url_menu3;
-                else if (menuId === "4") targetUrl = result.url_menu4;
-            }
+            
+            // Perbaikan Validasi: Menggunakan perbandingan longgar (==) dan mendukung double key bypass (url_menu atau menu)
+            if (menuId == 2) targetUrl = result.url_menu2 || result.menu2;
+            else if (menuId == 3) targetUrl = result.url_menu3 || result.menu3;
+            else if (menuId == 4) targetUrl = result.url_menu4 || result.menu4;
 
             if (targetUrl && targetUrl.trim() !== "") {
-                // Konversi Otomatis link Drive agar kompatibel penuh di Iframe Mobile
                 if (targetUrl.includes('/view?usp=sharing')) {
                     targetUrl = targetUrl.replace('/view?usp=sharing', '/preview');
                 } else if (targetUrl.includes('/view')) {
@@ -404,9 +401,11 @@
             this.innerHTML = originalText;
             this.style.pointerEvents = 'auto';
 
-            if (result.status === "success" && result.url_menu5 && result.url_menu5.trim() !== "") {
-                // Langsung lempar pengunjung keluar menuju link survei resmi
-                window.location.href = result.url_menu5.trim();
+            // Mendukung double key bypass (url_menu5 atau menu5)
+            let linkSurvei = result.url_menu5 || result.menu5;
+
+            if (linkSurvei && linkSurvei.trim() !== "") {
+                window.location.href = linkSurvei.trim();
             } else {
                 alert("⚠️ Tautan Survei belum diisi atau belum diperbarui oleh Admin.");
             }
